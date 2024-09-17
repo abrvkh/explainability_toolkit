@@ -7,8 +7,8 @@ All methods rely on a model format similar to a HuggingFace🤗 model with the o
 The `notebooks` folder contains notebooks that show examples of how the methods can be used. 
 
 **Decode** 
-* **LogitLens** reference: https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens status: implemented
-* **PatchScope** reference: https://arxiv.org/abs/2401.06102 status: in progress
+* **LogitLens** reference: https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens
+* **PatchScope** reference: https://arxiv.org/abs/2401.06102 *Coming soon*
 
 **Act** 
-* *Coming soon*
+* **Steering vectors** reference: https://arxiv.org/abs/2308.10248
