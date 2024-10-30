@@ -12,3 +12,8 @@ The `notebooks` folder contains notebooks that show examples of how the methods 
 
 **Act** 
 * **Steering vectors** reference: https://arxiv.org/abs/2308.10248
+
+**Notebooks**
+* LogitLens applied to Phi3: notebooks/phi3_logitlens.ipynb
+* Steering vectors applied to Phi3: notebooks/phi3_steering_vectors.ipynb (see the YouTube video here: https://www.youtube.com/watch?v=cp-YSyc5aW8 and https://www.youtube.com/watch?v=cuUUWYtEJKY)
+* Controlling the personalities inside your model: emotion-based: notebooks/steer_for_emotions.ipynb, persona-based: notebooks/steer_for_personas.ipynb, style-based: notebooks/steer_for_styles.ipynb. 
