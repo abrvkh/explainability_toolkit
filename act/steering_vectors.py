@@ -78,6 +78,9 @@ def optimise_steering_vecs(model, toks_A, toks_B, hidden_dim, layer, type='full'
         - The constant and reft methods aren't fully optimised yet! Use with care :) 
     '''
     device = model.device
+    # freeze model params 
+    for param in model.parameters():
+        param.requires_grad = False
     # initialise trainable parameter: the steering vector to add to the layer of choice 
     if type=='full':
         steering_vec = torch.randn(hidden_dim, requires_grad=True, dtype=torch.bfloat16)
@@ -113,6 +116,7 @@ def optimise_steering_vecs(model, toks_A, toks_B, hidden_dim, layer, type='full'
     for epoch in range(num_epochs): 
         # iterate over dataset of chosen style 
         for i in range(0, toks_A.shape[0], batch_size): 
+            optimiser.zero_grad()
             # pass train data through model 
             out_A = model(toks_A[i:i+batch_size,:-1])
             out_B = model(toks_B[i:i+batch_size,:-1])
@@ -123,10 +127,11 @@ def optimise_steering_vecs(model, toks_A, toks_B, hidden_dim, layer, type='full'
             loss = loss_A  + torch.max(torch.tensor(0.0).to(device), threshold - loss_B)
             print(i, loss.item())
             # backpropagate
-            optimiser.zero_grad()
             loss.backward()
             # update steering vector
             optimiser.step()
+            del out_A, out_B, loss_A, loss_B
+            torch.cuda.empty_cache()
     h_o.remove()
     if type=='reft':
         return (R_opt, W_opt, b_opt)
