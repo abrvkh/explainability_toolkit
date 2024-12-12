@@ -1,5 +1,6 @@
 from einops import rearrange, repeat, einsum
 import gc
+import math
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -119,19 +120,25 @@ def optimise_steering_vecs(model, toks_A, toks_B, hidden_dim, layer, type='full'
             optimiser.zero_grad()
             # pass train data through model 
             out_A = model(toks_A[i:i+batch_size,:-1])
-            out_B = model(toks_B[i:i+batch_size,:-1])
-            # calculate loss: steer towards A, steer away from B
+            # calculate loss 
             loss_A = torch.nn.functional.cross_entropy(out_A.logits.transpose(1,2), toks_A[i:i+batch_size,1:])
-            loss_B = torch.nn.functional.cross_entropy(out_B.logits.transpose(1,2), toks_B[i:i+batch_size,1:])
+            # steer towards A, steer away from B
             threshold = 3
-            loss = loss_A  + torch.max(torch.tensor(0.0).to(device), threshold - loss_B)
+            loss = loss_A
+            if toks_B is not None:
+                out_B = model(toks_B[i:i+batch_size,:-1])
+                loss_B = torch.nn.functional.cross_entropy(out_B.logits.transpose(1,2), toks_B[i:i+batch_size,1:])
+                loss += torch.max(torch.tensor(0.0).to(device), threshold - loss_B)
             print(i, loss.item())
             # backpropagate
             loss.backward()
             # update steering vector
             optimiser.step()
-            del out_A, out_B, loss_A, loss_B
+            del out_A, loss_A
+            if toks_B is not None:
+                del out_B, loss_B
             torch.cuda.empty_cache()
+            gc.collect()
     h_o.remove()
     if type=='reft':
         return (R_opt, W_opt, b_opt)
@@ -187,7 +194,7 @@ def do_steering(model, test_toks, steering_vec, steer_type = 'full', scale = 1, 
         elif steer_type == 'constant':
             def modify_activation():
                 def hook(model, input): 
-                    input[0][:,:,:] = steering_scale * input[0][:,:,:]
+                    input[0][:,:,:] = steering_vec * input[0][:,:,:]
                 return hook
         elif steer_type == 'reft':
             W_opt, R_opt, b_opt = steering_vec[0], steering_vec[1], steering_vec[2]
@@ -209,9 +216,10 @@ def do_steering(model, test_toks, steering_vec, steer_type = 'full', scale = 1, 
     topk_all = []
     for i in range(0, test_toks.shape[0], batch_size):
         # during generation input shape is [1, seq_len, hidden_size] in 1st pass and after it [1, 1, hidden_size]
-        outs, top_probas = utils.custom_generate(model, test_toks[i:i+batch_size], max_new_tokens=150, temperature=0.5, k=5)
+        # outs, top_probas = utils.custom_generate(model, test_toks[i:i+batch_size], max_new_tokens=150, temperature=0.5, k=5)
+        outs = model.generate(test_toks[i:i+batch_size], max_new_tokens=400)
         outs_all.append(outs)
-        topk_all.append(top_probas)
+        # topk_all.append(top_probas)
     outs_all = torch.cat(outs_all, dim=0)
     # remove all hooks
     if steering_vec is not None: 
